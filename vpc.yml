@@ -1,5 +1,11 @@
 Description: This template is for the VPC deployment and will include all resources related to the VPC including subnets and internet gateways spread across availability zones.
 
+Parameters:
+  SSHKeyName:
+    Description: SSH KeyPair name for EC2 instances
+    Type: String
+    Default: cfa-sshkey
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -23,54 +29,36 @@ Resources:
     Properties:
       InternetGatewayId: !Ref IGW
       VpcId: !Ref VPC
-      Tags:
-        - Key: stack
-          Value: production
   
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.10.0/24
-      AvailabilityZone: "us-east-1a"
-      Tags:
-        - Key: stack
-          Value: production
+      AvailabilityZone: "eu-west-1a"
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.20.0/24
-      AvailabilityZone: "us-east-1a"
-      Tags:
-        - Key: stack
-          Value: production
+      AvailabilityZone: "eu-west-1a"
   
   NATGateway1:
    Type: AWS::EC2::NatGateway
    Properties:
-      AllocationId: !GetAtt NATGatewayEIP.AllocationId
+      AllocationId: !GetAtt NATGatewayEIP1.AllocationId
       SubnetId: !Ref PublicSubnet1
-      Tags:
-      - Key: stack
-        Value: production
 
   NATGatewayEIP1:
    Type: AWS::EC2::EIP
    Properties:
       Domain: vpc
-      Tags:
-      - Key: stack
-        Value: production
 
   PublicRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
-      Tags:
-        - Key: stack
-          Value: production
 
   PublicRoute1:
     Type: AWS::EC2::Route
@@ -79,9 +67,6 @@ Resources:
         RouteTableId: !Ref PublicRouteTable1
         DestinationCidrBlock: 0.0.0.0/0
         GatewayId: !Ref IGW
-        Tags:
-        - Key: stack
-          Value: production
 
   PublicSubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
@@ -89,3 +74,37 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable1
 
+# Security Groups and Instances
+  JumpBoxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group Requirements for the Jump Box.
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: 10.0.0.0/16
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      VpcId: !Ref VPC
+      Tags:
+        - Key: stack
+          Value: production
+
+  JumpBox:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0ee415e1b8b71305f
+      KeyName: !Ref SSHKeyName #Needed to authenticate onto this EC2 instance via SSH
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          SubnetId: !Ref PublicSubnet1
+          AssociatePublicIpAddress: true #ensure it has an public facing IP Address
+          GroupSet: [ !Ref JumpBoxSecurityGroup ]
+      Tags:
+        - Key: stack
+          Value: production

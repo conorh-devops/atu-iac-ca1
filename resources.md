@@ -24,6 +24,7 @@ https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/gettingstarted.te
 Availability Zones
 https://aws.amazon.com/about-aws/global-infrastructure/regions_az/
 https://docs.aws.amazon.com/ram/latest/userguide/working-with-az-ids.html
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 
 Subnet AWS
 https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
@@ -33,4 +34,9 @@ https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html
 
 https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-natgateway.html
 
+Security Group Rules
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html
+
+SSH Key Pair
+https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-keypair.html
 
