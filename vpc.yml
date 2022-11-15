@@ -78,7 +78,7 @@ Resources:
   JumpBoxSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security Group Requirements for the Jump Box.
+      GroupDescription: Security Group for jumpbox (ssh access from all IPs).
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           FromPort: 22
@@ -105,6 +105,44 @@ Resources:
           SubnetId: !Ref PublicSubnet1
           AssociatePublicIpAddress: true #ensure it has an public facing IP Address
           GroupSet: [ !Ref JumpBoxSecurityGroup ]
+      Tags:
+        - Key: stack
+          Value: production
+
+  BackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for backend app (private only internal access and outbound internet on HTTPS and HTTP).
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref JumpBoxSecurityGroup
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0 #HTTP
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0 #HTTPS
+          FromPort: 443
+          IpProtocol: tcp
+          ToPort: 443
+      VpcId: !Ref VPC
+      Tags:
+        - Key: stack
+          Value: production
+
+  Backend:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0ee415e1b8b71305f
+      KeyName: !Ref SSHKeyName #Needed to authenticate onto this EC2 instance via SSH
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          SubnetId: !Ref PublicSubnet1
+          AssociatePublicIpAddress: false #ensure it has an public facing IP Address
+          GroupSet: [ !Ref BackendSecurityGroup ]
       Tags:
         - Key: stack
           Value: production
