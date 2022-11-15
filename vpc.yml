@@ -6,11 +6,62 @@ Parameters:
     Type: String
     Default: cfa-sshkey
 
+  AllIPCidrBlock:
+    Description: CIDR block for all IPs
+    Type: String
+    Default: 0.0.0.0/0
+  
+  AMIImageId: 
+    Description: OS image for provisioning servers
+    Type: String
+    Default: ami-0ee415e1b8b71305f
+  
+  AMIInstanceType: 
+    Description: Instance size for servers
+    Type: String
+    Default: t2.micro
+
+  VPCCidrBlock:
+    Description: CIDR block for VPC
+    Type: String
+    Default: 10.0.0.0/16
+
+  AvailabilityZone1:
+    Description: First availability zone
+    Type: String
+    Default: "eu-west-1a"
+
+  AvailabilityZone2:
+    Description: Second availability zone
+    Type: String
+    Default: "eu-west-1b"
+
+  PublicSubnetIP1:
+    Description: IP for first public subnet
+    Type: String
+    Default: 10.0.10.0/24
+
+  PublicSubnetIP2:
+    Description: IP for second public subnet
+    Type: String
+    Default: 10.0.11.0/24
+  
+  PrivateSubnetIP1:
+    Description: IP for first private subnet
+    Type: String
+    Default: 10.0.20.0/24
+  
+  PrivateSubnetIP2:
+    Description: IP for second private subnet
+    Type: String
+    Default: 10.0.21.0/24
+
 Resources:
+# Core VPC resources
   VPC:
     Type: AWS::EC2::VPC
     Properties: 
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref VPCCidrBlock
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags: 
@@ -29,20 +80,21 @@ Resources:
     Properties:
       InternetGatewayId: !Ref IGW
       VpcId: !Ref VPC
-  
+
+# First collection of resources for AZ 1
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.10.0/24
-      AvailabilityZone: "eu-west-1a"
+      CidrBlock: !Ref PublicSubnetIP1
+      AvailabilityZone: !Ref AvailabilityZone1
 
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.20.0/24
-      AvailabilityZone: "eu-west-1a"
+      CidrBlock: !Ref PrivateSubnetIP1
+      AvailabilityZone: !Ref AvailabilityZone1
   
   NATGateway1:
    Type: AWS::EC2::NatGateway
@@ -65,7 +117,7 @@ Resources:
     DependsOn: IGW
     Properties:
         RouteTableId: !Ref PublicRouteTable1
-        DestinationCidrBlock: 0.0.0.0/0
+        DestinationCidrBlock: !Ref AllIPCidrBlock
         GatewayId: !Ref IGW
 
   PublicSubnetRouteTableAssociation1:
@@ -74,21 +126,20 @@ Resources:
       SubnetId: !Ref PublicSubnet1
       RouteTableId: !Ref PublicRouteTable1
 
-# Security Groups and Instances
   JumpBoxSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Security Group for jumpbox (ssh access from all IPs).
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
+        - CidrIp: !Ref AllIPCidrBlock
           FromPort: 22
-          IpProtocol: tcp
           ToPort: 22
+          IpProtocol: tcp
       SecurityGroupEgress:
-        - CidrIp: 10.0.0.0/16
+        - CidrIp: !Ref VPCCidrBlock
           FromPort: 22
-          IpProtocol: tcp
           ToPort: 22
+          IpProtocol: tcp
       VpcId: !Ref VPC
       Tags:
         - Key: stack
@@ -97,13 +148,13 @@ Resources:
   JumpBox:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0ee415e1b8b71305f
-      KeyName: !Ref SSHKeyName #Needed to authenticate onto this EC2 instance via SSH
-      InstanceType: t2.micro
+      ImageId: !Ref AMIImageId
+      KeyName: !Ref SSHKeyName
+      InstanceType: !Ref AMIInstanceType
       NetworkInterfaces:
         - DeviceIndex: '0'
           SubnetId: !Ref PublicSubnet1
-          AssociatePublicIpAddress: true #ensure it has an public facing IP Address
+          AssociatePublicIpAddress: true
           GroupSet: [ !Ref JumpBoxSecurityGroup ]
       Tags:
         - Key: stack
@@ -116,17 +167,17 @@ Resources:
       SecurityGroupIngress:
         - SourceSecurityGroupId: !Ref JumpBoxSecurityGroup
           FromPort: 22
-          IpProtocol: tcp
           ToPort: 22
+          IpProtocol: tcp
       SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0 #HTTP
+        - CidrIp: !Ref AllIPCidrBlock
           FromPort: 80
-          IpProtocol: tcp
           ToPort: 80
-        - CidrIp: 0.0.0.0/0 #HTTPS
-          FromPort: 443
           IpProtocol: tcp
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 443
           ToPort: 443
+          IpProtocol: tcp
       VpcId: !Ref VPC
       Tags:
         - Key: stack
@@ -135,14 +186,143 @@ Resources:
   Backend:
     Type: AWS::EC2::Instance
     Properties:
-      ImageId: ami-0ee415e1b8b71305f
-      KeyName: !Ref SSHKeyName #Needed to authenticate onto this EC2 instance via SSH
-      InstanceType: t2.micro
+      ImageId: !Ref AMIImageId
+      KeyName: !Ref SSHKeyName 
+      InstanceType: !Ref AMIInstanceType
       NetworkInterfaces:
         - DeviceIndex: '0'
-          SubnetId: !Ref PublicSubnet1
-          AssociatePublicIpAddress: false #ensure it has an public facing IP Address
+          SubnetId: !Ref PrivateSubnet1
+          AssociatePublicIpAddress: false
           GroupSet: [ !Ref BackendSecurityGroup ]
+      Tags:
+        - Key: stack
+          Value: production
+
+# Second collection of resources for AZ 2
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetIP2
+      AvailabilityZone: !Ref AvailabilityZone2
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateSubnetIP1
+      AvailabilityZone: !Ref AvailabilityZone2
+  
+  NATGateway2:
+   Type: AWS::EC2::NatGateway
+   Properties:
+      AllocationId: !GetAtt NATGatewayEIP2.AllocationId
+      SubnetId: !Ref PublicSubnet2
+
+  NATGatewayEIP2:
+   Type: AWS::EC2::EIP
+   Properties:
+      Domain: vpc
+
+  PublicRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute2:
+    Type: AWS::EC2::Route
+    DependsOn: IGW
+    Properties:
+        RouteTableId: !Ref PublicRouteTable2
+        DestinationCidrBlock: !Ref AllIPCidrBlock
+        GatewayId: !Ref IGW
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable2
+
+  FrontendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for frontend (open all IPs on 443 and 80 and internally 22).
+      SecurityGroupIngress:
+        - CidrIp: !Ref JumpBoxSecurityGroup
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+      VpcId: !Ref VPC
+      Tags:
+        - Key: stack
+          Value: production
+
+  Frontend:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMIImageId
+      KeyName: !Ref SSHKeyName 
+      InstanceType: !Ref AMIInstanceType
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          SubnetId: !Ref PublicSubnet2
+          AssociatePublicIpAddress: true
+          GroupSet: [ !Ref FrontendSecurityGroup ]
+      Tags:
+        - Key: stack
+          Value: production
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for database app (private only internal access and outbound internet on HTTPS and HTTP).
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref JumpBoxSecurityGroup
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: !Ref AllIPCidrBlock
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+      VpcId: !Ref VPC
+      Tags:
+        - Key: stack
+          Value: production
+
+  Database:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AMIImageId
+      KeyName: !Ref SSHKeyName 
+      InstanceType: !Ref AMIInstanceType
+      NetworkInterfaces:
+        - DeviceIndex: '0'
+          SubnetId: !Ref PublicSubnet2
+          AssociatePublicIpAddress: false
+          GroupSet: [ !Ref DatabaseSecurityGroup ]
       Tags:
         - Key: stack
           Value: production
