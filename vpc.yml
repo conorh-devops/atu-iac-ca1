@@ -30,8 +30,7 @@ Resources:
   PublicSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: !Ref VPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.10.0/24
       AvailabilityZone: "us-east-1a"
       Tags:
@@ -41,8 +40,7 @@ Resources:
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId:
-        Ref: !Ref VPC
+      VpcId: !Ref VPC
       CidrBlock: 10.0.20.0/24
       AvailabilityZone: "us-east-1a"
       Tags:
@@ -88,8 +86,6 @@ Resources:
   PublicSubnetRouteTableAssociation1:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId:
-        Ref: !Ref PublicSubnet1
-      RouteTableId:
-        Ref: !Ref PublicRouteTable1
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable1
 
