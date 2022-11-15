@@ -17,14 +17,20 @@ Parameters:
     Default: ami-0ee415e1b8b71305f
   
   AMIInstanceType: 
-    Description: Instance size for servers
+    Description: Instance size for servers (t1.micro or t2.micro)
     Type: String
     Default: t2.micro
+    AllowedValues:
+      - t1.micro
+      - t2.micro
+    ConstraintDescription: Only t1.micro or t2.micro are available currently
 
   VPCCidrBlock:
     Description: CIDR block for VPC
     Type: String
     Default: 10.0.0.0/16
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(16|24)
+    ConstraintDescription: Please only use Class A private IPs (10.X.X.X/X)
 
   AvailabilityZone1:
     Description: First availability zone
@@ -40,22 +46,43 @@ Parameters:
     Description: IP for first public subnet
     Type: String
     Default: 10.0.10.0/24
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(16|24)
+    ConstraintDescription: Please only use Class A private IPs (10.X.X.X/X)
 
   PublicSubnetIP2:
     Description: IP for second public subnet
     Type: String
     Default: 10.0.11.0/24
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(16|24)
+    ConstraintDescription: Please only use Class A private IPs (10.X.X.X/X)
   
   PrivateSubnetIP1:
     Description: IP for first private subnet
     Type: String
     Default: 10.0.20.0/24
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(16|24)
+    ConstraintDescription: Please only use Class A private IPs (10.X.X.X/X)
   
   PrivateSubnetIP2:
     Description: IP for second private subnet
     Type: String
     Default: 10.0.21.0/24
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])/(16|24)
+    ConstraintDescription: Please only use Class A private IPs (10.X.X.X/X)
 
+Mappings: 
+  RegionMap: 
+    us-east-1: 
+      "HVM64": "ami-0ff8a91507f77f867"
+    us-west-1: 
+      "HVM64": "ami-0bdb828fd58c52235"
+    eu-west-1: 
+      "HVM64": "ami-047bb4163c506cd98"
+    ap-southeast-1: 
+      "HVM64": "ami-08569b978cc4dfa10"
+    ap-northeast-1: 
+      "HVM64": "ami-06cd52961ce9f0d85"
+      
 Resources:
 # Core VPC resources
   VPC:
