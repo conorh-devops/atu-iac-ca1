@@ -210,7 +210,7 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: !Ref PrivateSubnetIP1
+      CidrBlock: !Ref PrivateSubnetIP2
       AvailabilityZone: !Ref AvailabilityZone2
   
   NATGateway2:
@@ -248,7 +248,7 @@ Resources:
     Properties:
       GroupDescription: Security Group for frontend (open all IPs on 443 and 80 and internally 22).
       SecurityGroupIngress:
-        - CidrIp: !Ref JumpBoxSecurityGroup
+        - SourceSecurityGroupId: !Ref JumpBoxSecurityGroup
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
